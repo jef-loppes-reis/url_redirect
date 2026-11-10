@@ -47,11 +47,13 @@ switch ($Acao) {
         if ($Horas -gt 0) {
             $quando = (Get-Date).AddHours($Horas)
             $exe = if (Get-Command pwsh.exe -ErrorAction SilentlyContinue) { 'pwsh.exe' } else { 'powershell.exe' }
-            $acao = New-ScheduledTaskAction -Execute $exe -Argument "-NoProfile -File `"$PSCommandPath`" off"
-            $gatilho = New-ScheduledTaskTrigger -Once -At $quando
+            # Atenção: variáveis do PowerShell não diferenciam maiúsculas; nunca reutilize o nome
+            # do parâmetro $Acao (um "$acao" aqui sobrescreveria o parâmetro validado).
+            $tarefaAcao = New-ScheduledTaskAction -Execute $exe -Argument "-NoProfile -File `"$PSCommandPath`" off"
+            $tarefaGatilho = New-ScheduledTaskTrigger -Once -At $quando
             # StartWhenAvailable: se o PC estiver desligado/dormindo na hora, desliga ao voltar.
-            $config = New-ScheduledTaskSettingsSet -StartWhenAvailable
-            Register-ScheduledTask -TaskName $Tarefa -Action $acao -Trigger $gatilho -Settings $config -Force | Out-Null
+            $tarefaConfig = New-ScheduledTaskSettingsSet -StartWhenAvailable
+            Register-ScheduledTask -TaskName $Tarefa -Action $tarefaAcao -Trigger $tarefaGatilho -Settings $tarefaConfig -Force | Out-Null
             "Site publicado. Desliga automaticamente em $($quando.ToString('dd/MM HH:mm'))."
         } else {
             'Site publicado. Lembre-se de rodar: .\site.ps1 off'
