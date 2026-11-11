@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Liga, desliga ou consulta o site (GitHub Pages) deste repositório.
 
@@ -21,8 +21,14 @@ $Repo = 'jef-loppes-reis/url_redirect'
 $Tarefa = 'url_redirect_desligar_site'
 
 function Get-Pages {
+    # No Windows PowerShell 5.1, o stderr do gh vira erro fatal com EAP=Stop; o 404 (Pages
+    # desativado) é um resultado normal aqui, então relaxamos só durante a chamada.
+    $anterior = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     $json = gh api "repos/$Repo/pages" 2>$null
-    if ($LASTEXITCODE -eq 0 -and $json) { return $json | ConvertFrom-Json }
+    $codigo = $LASTEXITCODE
+    $ErrorActionPreference = $anterior
+    if ($codigo -eq 0 -and $json) { return $json | ConvertFrom-Json }
     return $null  # 404 = Pages desativado
 }
 
@@ -46,7 +52,9 @@ switch ($Acao) {
         Remove-Agendamento
         if ($Horas -gt 0) {
             $quando = (Get-Date).AddHours($Horas)
-            $exe = if (Get-Command pwsh.exe -ErrorAction SilentlyContinue) { 'pwsh.exe' } else { 'powershell.exe' }
+            # Caminho COMPLETO do Windows PowerShell: o agendador não enxerga o PATH do usuário
+            # (um "pwsh.exe" simples falhou com 0x80070002 e o site não desligou).
+            $exe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
             # Atenção: variáveis do PowerShell não diferenciam maiúsculas; nunca reutilize o nome
             # do parâmetro $Acao (um "$acao" aqui sobrescreveria o parâmetro validado).
             $tarefaAcao = New-ScheduledTaskAction -Execute $exe -Argument "-NoProfile -File `"$PSCommandPath`" off"
@@ -63,6 +71,6 @@ switch ($Acao) {
     'off' {
         if (Get-Pages) { gh api -X DELETE "repos/$Repo/pages" | Out-Null }
         Remove-Agendamento
-        'Site fora do ar. (O cache do GitHub pode mostrar a página por alguns minutos.)'
+        'Site fora do ar. (O cache do GitHub pode mostrar a página por até 10 minutos.)'
     }
 }

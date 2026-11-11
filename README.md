@@ -24,3 +24,9 @@ Requer o `gh` autenticado na conta `jef-loppes-reis`.
   `referrer: no-referrer`, então o `code` do OAuth não sai do navegador.
 - O `code` vale poucos minutos e só uma vez, mas não compartilhe o endereço com ele.
 - `noindex` evita que buscadores listem a página.
+
+## Cache depois de desligar
+O GitHub guarda a página em cache (`max-age=600`): depois do `off`, a URL pode continuar
+respondendo 200 por **até 10 minutos**. `.\site.ps1 status` consulta a origem e mostra o estado
+real. O agendamento (`-Horas`) usa o caminho completo do Windows PowerShell, pois o agendador
+do Windows não enxerga o PATH do usuário.
